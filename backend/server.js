@@ -4,6 +4,7 @@ const Hapi = require('@hapi/hapi');
 const mongoose = require("mongoose");
 require('dotenv').config();
 
+
 const Book = require('./models/book');
 
 const connectDB = async () => {
@@ -18,12 +19,21 @@ const connectDB = async () => {
   }
 };
 
+
+
 const init = async () => {
     await connectDB();
 
     const server = Hapi.server({
         port: 3000,
-        host: 'localhost'
+        host: 'localhost',
+        routes: {
+        cors: {
+          origin: ['*'],
+          headers: ['Accept', 'Content-Type', 'Authorization'],
+          additionalHeaders: ['X-Requested-With']
+        }
+  }
     });
 
     server.route([
@@ -41,6 +51,14 @@ const init = async () => {
         const book = new Book(request.payload);
         await book.save();
         return book;
+      }
+    },
+    {
+      method: 'DELETE',
+      path: '/books',
+      handler: async (request) => {
+        await Book.deleteMany({});
+        return { message: 'Wszystkie ksiazki zostały usunięte.' };
       }
     }
   ]);
