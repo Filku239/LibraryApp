@@ -1,19 +1,19 @@
 <script>
     const navLinks = [
         { name: "Home", href: "/" },
-        { name: "Books", href: "/books" },
+        { name: "Add books", href: "/addbooks" },
         { name: "Authors", href: "/authors" }
     ];
 </script>
 
 <nav class="navbar">
     <div class="navbar-logo">
-        <h1>MyLibrary</h1>
+        <h1>📖OurLibrary📖</h1>
     </div>
     <ul class="navbar-links">
         {#each navLinks as link}
             <li>
-                <a href="{link.href}">{link.name}</a>
+                <a href={link.href}>{link.name}</a>
             </li>
         {/each}
     </ul>

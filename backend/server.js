@@ -45,6 +45,13 @@ const init = async () => {
       }
     },
     {
+      method: 'GET',
+      path: '/books/{id}',
+      handler: async (request) => {
+        return await Book.findById(request.params.id);
+      }
+    },
+    {
       method: 'POST',
       path: '/books',
       handler: async (request) => {

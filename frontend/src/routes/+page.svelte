@@ -4,32 +4,33 @@
 
     export let books = [];
 
-    // Funkcja fetchująca książki
-    const fetchBooks = async () => {
+    const loadBooks = async () => {
         try {
-            const res = await fetch('http://localhost:3000/books');
-            if (!res.ok) throw new Error('Failed to fetch books');
-            books = await res.json();
+            const response = await fetch('http://localhost:3000/books');
+            if (!response.ok) throw new Error('Failed to fetch books');
+            books = await response.json();
         } catch (error) {
             console.error(error);
             books = [];
         }
-    }
+    };
 
-    onMount(fetchBooks);
+    onMount(loadBooks);
 </script>
 
-<Navbar/>   
+<Navbar />
 
-<div class="book-grid">
-    {#each books as book, i}
-        <div class="book-card" style="animation-delay: {i * 0.1}s">
+<h2 class="library-heading">W naszej bibliotece znajdziesz:</h2>
+
+<div class="books-container">
+    {#each books as book}
+        <a href={`/book/${book._id}`} class="book-card">
             <img src="{book.image}" alt="{book.title}" class="book-image" />
             <div class="book-info">
-                <h2>{book.title}</h2>
-                <p>by {book.author}</p>
+                <h2 class="book-title">{book.title}</h2>
+                <p class="book-author">by {book.author}</p>
             </div>
-        </div>
+        </a>
     {/each}
 </div>
 
@@ -40,68 +41,61 @@
         background: #f5f5f5;
     }
 
-    h1 {
+    .library-heading {
         text-align: center;
-        margin: 2rem 0;
+        font-size: 28px;
+        font-weight: 600;
         color: #333;
+        margin: 24px 0;
+        letter-spacing: 0.5px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
-    .book-grid {
-        display: grid;
-        margin-top: 30px;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        justify-content: center;
-        padding: 0 2rem 2rem 2rem;
+    .books-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        padding: 16px 32px;
+        justify-content: flex-start;
     }
 
     .book-card {
-        max-width: 220px;
-        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        overflow: hidden;
-        cursor: pointer;
-        margin: 0 auto;
-        transition: transform 0.2s, box-shadow 0.2s;
-        opacity: 0;
-        transform: translateY(20px);
-        animation: fadeInUp 0.4s forwards;
-    }
-
-    .book-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        width: 200px;
+        text-decoration: none;
+        color: inherit;
+        flex-shrink: 0;
     }
 
     .book-image {
         width: 100%;
         height: 250px;
         object-fit: cover;
+        border-radius: 8px 8px 0 0;
     }
 
     .book-info {
-        padding: 1rem;
+        background: #fff;
+        padding: 12px;
+        height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         text-align: center;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     }
 
-    .book-info h2 {
+    .book-title {
         font-size: 1.2rem;
-        margin: 0.5rem 0;
+        margin: 0;
         font-weight: bold;
     }
 
-    .book-info p {
+    .book-author {
         color: #555;
         font-size: 0.9rem;
-        margin: 0;
+        margin-top: 4px;
         font-style: italic;
-    }
-
-    @keyframes fadeInUp {
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
 </style>
