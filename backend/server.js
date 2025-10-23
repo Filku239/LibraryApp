@@ -2,10 +2,14 @@
 
 const Hapi = require('@hapi/hapi');
 const mongoose = require("mongoose");
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 
 const Book = require('./models/book');
+const User = require('./models/user');
+
 
 const connectDB = async () => {
   try {
@@ -66,6 +70,49 @@ const init = async () => {
       handler: async (request) => {
         await Book.deleteMany({});
         return { message: 'Wszystkie ksiazki zostały usunięte.' };
+      }
+    },
+    {
+      method: 'POST',
+      path: '/user/login',
+      handler: async (request) => {
+        const { email, password } = request.payload;
+        const user = await User.findOne({ email });
+        if (!user) {
+          return { message: 'Użytkownik nie istnieje.' };
+        }
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) {
+          return { message: 'Nieprawidłowe hasło.' };
+        }
+
+        const token = jwt.sign(
+          { userId: user._id, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: '1h' }
+        );
+
+        return { message: 'Zalogowano pomyślnie.', token };      }
+    },
+    {
+      method: 'POST',
+      path: '/user/register',
+      handler: async (request) => {
+        const { name, email, password } = request.payload;
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          return { message: 'Użytkownik o tym e-mailu już istnieje.' };
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ name, email, password: hashedPassword });
+        await user.save();
+        const token = jwt.sign(
+          { userId: user._id, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: '1h' }
+        );
+
+        return { message: 'Rejestracja pomyślna.', token };
       }
     }
   ]);

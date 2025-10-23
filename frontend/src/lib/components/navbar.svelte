@@ -1,22 +1,49 @@
 <script>
-    const navLinks = [
-        { name: "Home", href: "/" },
-        { name: "Add books", href: "/addbooks" },
-        { name: "Authors", href: "/authors" }
-    ];
+  import { onMount } from 'svelte';
+  import { writable } from 'svelte/store';
+
+  // Tworzymy store na token i użytkownika, żeby navbar był reaktywny
+  export const token = writable(null);
+  export const user = writable(null);
+
+  // Sprawdzamy localStorage przy montowaniu komponentu
+  onMount(() => {
+    const storedToken = localStorage.getItem('jwtToken');
+    const storedUser = localStorage.getItem('user');
+    if (storedToken) token.set(storedToken);
+    if (storedUser) user.set(storedUser);
+  });
+
+  // Funkcja wylogowania
+  const logout = () => {
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('user');
+    token.set(null);
+    user.set(null);
+  };
+
+  $: navLinks = [
+    { name: "Home", href: "/" },
+    { name: "Add books", href: "/addbooks" },
+    $token ? { name: "Logout", href: "#", action: logout } : { name: "Login", href: "/login" }
+  ];
 </script>
 
 <nav class="navbar">
-    <div class="navbar-logo">
-        <h1>📖OurLibrary📖</h1>
-    </div>
-    <ul class="navbar-links">
-        {#each navLinks as link}
-            <li>
-                <a href={link.href}>{link.name}</a>
-            </li>
-        {/each}
-    </ul>
+  <div class="navbar-logo">
+    <h1>📖OurLibrary📖</h1>
+  </div>
+  <ul class="navbar-links">
+    {#each navLinks as link}
+      <li>
+        {#if link.action}
+          <a href={link.href} on:click|preventDefault={link.action}>{link.name}</a>
+        {:else}
+          <a href={link.href}>{link.name}</a>
+        {/if}
+      </li>
+    {/each}
+  </ul>
 </nav>
 
 <style>
@@ -24,7 +51,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem 2rem;
+        padding: 1rem 2rem; 
         background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
         color: #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
