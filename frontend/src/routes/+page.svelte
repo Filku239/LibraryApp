@@ -3,10 +3,14 @@
     import Navbar from '$lib/components/Navbar.svelte';
 
     export let books = [];
+    let searchQuery = '';
 
-    const loadBooks = async () => {
+    const loadBooks = async (query = '') => {
         try {
-            const response = await fetch('http://localhost:3000/books');
+            const url = query
+                ? `http://localhost:3000/books/search/${encodeURIComponent(query)}`
+                : `http://localhost:3000/books`;
+            const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch books');
             books = await response.json();
         } catch (error) {
@@ -15,23 +19,39 @@
         }
     };
 
+    const handleSearch = async () => {
+        await loadBooks(searchQuery.trim());
+    };
+
     onMount(loadBooks);
 </script>
 
 <Navbar />
 
-<h2 class="library-heading">W naszej bibliotece znajdziesz:</h2>
+<div class="search-bar">
+    <input
+        type="text"
+        bind:value={searchQuery}
+        placeholder="Wyszukaj książkę po tytule lub autorze..."
+        on:keydown={(e) => e.key === 'Enter' && handleSearch()}
+    />
+    <button on:click={handleSearch}>Szukaj</button>
+</div>
 
 <div class="books-container">
-    {#each books as book}
-        <a href={`/book/${book._id}`} class="book-card">
-            <img src="{book.image}" alt="{book.title}" class="book-image" />
-            <div class="book-info">
-                <h2 class="book-title">{book.title}</h2>
-                <p class="book-author">by {book.author}</p>
-            </div>
-        </a>
-    {/each}
+    {#if books.length > 0}
+        {#each books as book}
+            <a href={`/book/${book._id}`} class="book-card">
+                <img src="{book.image}" alt="{book.title}" class="book-image" />
+                <div class="book-info">
+                    <h2 class="book-title">{book.title}</h2>
+                    <p class="book-author">by {book.author}</p>
+                </div>
+            </a>
+        {/each}
+    {:else}
+        <p class="no-results">Nie znaleziono książek 😔</p>
+    {/if}
 </div>
 
 <style>
@@ -41,14 +61,42 @@
         background: #f5f5f5;
     }
 
-    .library-heading {
-        text-align: center;
-        font-size: 28px;
-        font-weight: 600;
-        color: #333;
-        margin: 24px 0;
-        letter-spacing: 0.5px;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    .search-bar {
+        margin-top: 40px;   
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .search-bar input {
+        padding: 10px 16px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        width: 300px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus {
+        border-color: #007bff;
+    }
+
+    .search-bar button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .search-bar button:hover {
+        background-color: #0056b3;
     }
 
     .books-container {
@@ -97,5 +145,13 @@
         font-size: 0.9rem;
         margin-top: 4px;
         font-style: italic;
+    }
+
+    .no-results {
+        width: 100%;
+        text-align: center;
+        color: #777;
+        font-size: 1.1rem;
+        margin-top: 40px;
     }
 </style>

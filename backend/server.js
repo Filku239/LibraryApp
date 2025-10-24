@@ -73,6 +73,19 @@ const init = async () => {
       }
     },
     {
+      method: 'GET',
+      path: '/books/search/{query}',
+      handler: async (request) => {
+        const q = request.params.query;
+        return await Book.find({
+          $or: [
+            { title: { $regex: q, $options: 'i' } },
+            { author: { $regex: q, $options: 'i' } }
+          ]
+        });
+      }
+    },
+    {
       method: 'POST',
       path: '/user/login',
       handler: async (request) => {
