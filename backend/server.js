@@ -4,18 +4,16 @@ const Hapi = require('@hapi/hapi');
 const mongoose = require("mongoose");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const validateToken = require('./tokenValidate');
 require('dotenv').config();
-
 
 const Book = require('./models/book');
 const User = require('./models/user');
 
-
 const connectDB = async () => {
   try {
     const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_CLUSTER}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
-    await mongoose.connect(uri, {      
-    });
+    await mongoose.connect(uri);
     console.log('Połączono z MongoDB');
   } catch (err) {
     console.error('Błąd połączenia z MongoDB:', err.message);
@@ -23,37 +21,31 @@ const connectDB = async () => {
   }
 };
 
-
-
 const init = async () => {
-    await connectDB();
+  await connectDB();
 
-    const server = Hapi.server({
-        port: 3000,
-        host: 'localhost',
-        routes: {
-        cors: {
-          origin: ['*'],
-          headers: ['Accept', 'Content-Type', 'Authorization'],
-          additionalHeaders: ['X-Requested-With']
-        }
-  }
-    });
+  const server = Hapi.server({
+    port: 3000,
+    host: 'localhost',
+    routes: {
+      cors: {
+        origin: ['*'],
+        headers: ['Accept', 'Content-Type', 'Authorization'],
+        additionalHeaders: ['X-Requested-With']
+      }
+    }
+  });
 
-    server.route([
+  server.route([
     {
       method: 'GET',
       path: '/books',
-      handler: async () => {
-        return await Book.find();
-      }
+      handler: async () => await Book.find()
     },
     {
       method: 'GET',
       path: '/books/{id}',
-      handler: async (request) => {
-        return await Book.findById(request.params.id);
-      }
+      handler: async (request) => await Book.findById(request.params.id)
     },
     {
       method: 'POST',
@@ -62,14 +54,6 @@ const init = async () => {
         const book = new Book(request.payload);
         await book.save();
         return book;
-      }
-    },
-    {
-      method: 'DELETE',
-      path: '/books',
-      handler: async (request) => {
-        await Book.deleteMany({});
-        return { message: 'Wszystkie ksiazki zostały usunięte.' };
       }
     },
     {
@@ -91,13 +75,10 @@ const init = async () => {
       handler: async (request) => {
         const { email, password } = request.payload;
         const user = await User.findOne({ email });
-        if (!user) {
-          return { message: 'Użytkownik nie istnieje.' };
-        }
+        if (!user) return { message: 'Użytkownik nie istnieje.' };
+
         const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-          return { message: 'Nieprawidłowe hasło.' };
-        }
+        if (!isValid) return { message: 'Nieprawidłowe hasło.' };
 
         const token = jwt.sign(
           { userId: user._id, email: user.email },
@@ -105,7 +86,8 @@ const init = async () => {
           { expiresIn: '1h' }
         );
 
-        return { message: 'Zalogowano pomyślnie.', token };      }
+        return { message: 'Zalogowano pomyślnie.', token };
+      }
     },
     {
       method: 'POST',
@@ -113,12 +95,12 @@ const init = async () => {
       handler: async (request) => {
         const { name, email, password } = request.payload;
         const existingUser = await User.findOne({ email });
-        if (existingUser) {
-          return { message: 'Użytkownik o tym e-mailu już istnieje.' };
-        }
+        if (existingUser) return { message: 'Użytkownik o tym e-mailu już istnieje.' };
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User({ name, email, password: hashedPassword });
         await user.save();
+
         const token = jwt.sign(
           { userId: user._id, email: user.email },
           process.env.JWT_SECRET,
@@ -127,16 +109,59 @@ const init = async () => {
 
         return { message: 'Rejestracja pomyślna.', token };
       }
+    },
+    {
+      method: 'POST',
+      path: '/user/favorites/{bookId}',
+      handler: async (request) => {
+        const payload = validateToken(request);
+        if (!payload) return { message: 'Brak autoryzacji.' };
+
+        const user = await User.findById(payload.userId);
+        const bookId = request.params.bookId;
+        if (!user.favorites.includes(bookId)) {
+          user.favorites.push(bookId);
+          await user.save();
+        }
+
+        return { message: 'Dodano do ulubionych.' };
+      }
+    },
+    {
+      method: 'DELETE',
+      path: '/user/favorites/{bookId}',
+      handler: async (request) => {
+        const payload = validateToken(request);
+        if (!payload) return { message: 'Brak autoryzacji.' };
+
+        const user = await User.findById(payload.userId);
+        const bookId = request.params.bookId;
+        user.favorites = user.favorites.filter(id => String(id) !== bookId);
+        await user.save();
+
+        return { message: 'Usunięto z ulubionych.' };
+      }
+    },
+    {
+      method: 'GET',
+      path: '/user/favorites',
+      handler: async (request) => {
+        const payload = validateToken(request);
+        if (!payload) return { message: 'Brak autoryzacji.' };
+
+        const user = await User.findById(payload.userId).populate("favorites");
+        return user.favorites;
+      }
     }
   ]);
 
-    await server.start();
-    console.log('Server running on %s', server.info.uri);
+  await server.start();
+  console.log('Server running on %s', server.info.uri);
 };
 
 process.on('unhandledRejection', (err) => {
-    console.log(err);
-    process.exit(1);
+  console.error(err);
+  process.exit(1);
 });
 
 init();

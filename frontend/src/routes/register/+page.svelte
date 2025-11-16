@@ -1,186 +1,165 @@
 <script>
-    import { onMount } from 'svelte';
     import Navbar from '$lib/components/Navbar.svelte';
     import { writable } from 'svelte/store';
-    import { fade } from 'svelte/transition';
     import { goto } from '$app/navigation';
-
-    export const token = writable(null);
-    export const user = writable(null);
+    import { token, user } from '$lib/auth.js';
 
     let username = '';
     let password = '';
     let confirmPassword = '';
-    let name = '';  // Dodane pole dla imienia
+    let name = '';
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        const formData = new FormData(event.target);
-        const credentials = {
-            name: formData.get('name'),  // Dodane
-            email: formData.get('username'),
-            password: formData.get('password'),
-            confirmPassword: formData.get('confirmPassword')
-        };
-
-        if (credentials.password !== credentials.confirmPassword) {
+        if (password !== confirmPassword) {
             alert('Hasła i potwierdzenie hasła nie są takie same.');
             return;
         }
 
         try {
-    const res = await fetch('http://localhost:3000/user/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: credentials.name,
-            email: credentials.email,
-            password: credentials.password
-        })
-    });
+            const res = await fetch('http://localhost:3000/user/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email: username, password })
+            });
 
-    if (res.ok) {
-        const data = await res.json();
-        const userData = data.user || { name: credentials.email };
-        token.set(data.token);
-        user.set(userData);
-        localStorage.setItem('jwtToken', data.token);
-        localStorage.setItem('user', userData.name);
-        goto('/');
-    } else {
-        alert('Błąd rejestracji.');
-    }
-} catch (err) {
-    console.error(err);
-    alert('Wystąpił błąd połączenia z serwerem.');
-}
-
+            if (res.ok) {
+                const data = await res.json();
+                const userData = data.user || { name: username };
+                token.set(data.token);
+                user.set(userData.name);
+                localStorage.setItem('jwtToken', data.token);
+                localStorage.setItem('user', userData.name);
+                goto('/');
+            } else {
+                alert('Błąd rejestracji.');
+            }
+        } catch {
+            alert('Wystąpił błąd połączenia z serwerem.');
+        }
     };
 </script>
 
 <Navbar />
 
 <div class="register-page">
-  <div class="register-container">
-    <div class="register-card" in:fade>
-      <h1>Rejestracja</h1>
-      <form on:submit={handleSubmit}>
-        <label for="name">Imię:</label> 
-        <input
-          type="text"
-          name="name"
-          id="name"
-          placeholder="np. Jan Kowalski"
-          required
-        />
+    <div class="register-container">
+        <div class="register-card">
+            <h1>Rejestracja</h1>
+            <form on:submit={handleSubmit}>
+                <label for="name">Imię:</label>
+                <input
+                    type="text"
+                    id="name"
+                    bind:value={name}
+                    placeholder="np. Jan Kowalski"
+                    required
+                />
 
-        <label for="username">E-mail:</label>
-        <input
-          type="text"
-          name="username"
-          id="username"
-          placeholder="np. jan.kowalski@example.com"
-          required
-        />
+                <label for="username">E-mail:</label>
+                <input
+                    type="text"
+                    id="username"
+                    bind:value={username}
+                    placeholder="np. jan.kowalski@example.com"
+                    required
+                />
 
-        <label for="password">Hasło:</label>
-        <input
-          type="password"
-          name="password"
-          id="password"
-          placeholder="•••••••"
-          required
-        />
+                <label for="password">Hasło:</label>
+                <input
+                    type="password"
+                    id="password"
+                    bind:value={password}
+                    placeholder="•••••••"
+                    required
+                />
 
-        <label for="confirmPassword">Powtórz hasło:</label>
-        <input
-          type="password"
-          name="confirmPassword"
-          id="confirmPassword"
-          placeholder="•••••••"
-          required
-        />
+                <label for="confirmPassword">Powtórz hasło:</label>
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    bind:value={confirmPassword}
+                    placeholder="•••••••"
+                    required
+                />
 
-        <button type="submit">
-          Zarejestruj się
-        </button>
-      </form>
+                <button type="submit">Zarejestruj się</button>
+            </form>
 
-      <p class="login-link">
-        Masz konto?
-        <a href="/login">Zaloguj się</a>
-      </p>
+            <p class="login-link">
+                Masz konto? <a href="/login">Zaloguj się</a>
+            </p>
+        </div>
     </div>
-  </div>
 </div>
 
 <style>
-  :global(body) {
+:global(body) {
     font-family: 'Arial', sans-serif;
     margin: 0;
     background: #f5f5f5;
-  }
+}
 
-  .register-page {
+.register-page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     background: linear-gradient(135deg, #dceeff, #ffffff, #dff3ff);
-  }
+}
 
-  .register-container {
+.register-container {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 2rem;
     margin: 80px;
-  }
+}
 
-  .register-card {
+.register-card {
     background: #ffffff;
     padding: 2rem 2.5rem;
     border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
     width: 100%;
     max-width: 420px;
     border: 1px solid #e9eef2;
-  }
+}
 
-  .register-card h1 {
+.register-card h1 {
     text-align: center;
     font-size: 1.8rem;
     font-weight: 600;
     color: #1e293b;
     margin-bottom: 1.5rem;
-  }
+}
 
-  form {
+form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
+}
 
-  label {
+label {
     font-size: 0.9rem;
     color: #475569;
-  }
+}
 
-  input {
+input {
     padding: 0.7rem 1rem;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
     font-size: 1rem;
     transition: all 0.2s ease;
-  }
+}
 
-  input:focus {
+input:focus {
     border-color: #38bdf8;
     outline: none;
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
-  }
+}
 
-  button {
+button {
     background-color: #0ea5e9;
     color: white;
     font-weight: 600;
@@ -190,33 +169,33 @@
     padding: 0.8rem;
     cursor: pointer;
     transition: background-color 0.25s ease, transform 0.1s ease;
-  }
+}
 
-  button:hover {
+button:hover {
     background-color: #0284c7;
     transform: translateY(-1px);
-  }
+}
 
-  button:disabled {
+button:disabled {
     background-color: #7dd3fc;
     cursor: not-allowed;
-  }
+}
 
-  .login-link {
+.login-link {
     text-align: center;
     font-size: 0.9rem;
     color: #475569;
     margin-top: 1.5rem;
-  }
+}
 
-  .login-link a {
+.login-link a {
     color: #0ea5e9;
     font-weight: 500;
     text-decoration: none;
     transition: color 0.2s ease;
-  }
+}
 
-  .login-link a:hover {
+.login-link a:hover {
     color: #0369a1;
-  }
+}
 </style>

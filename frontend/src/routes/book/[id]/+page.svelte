@@ -4,7 +4,6 @@
     import Navbar from '$lib/components/Navbar.svelte';
 
     let book = null;
-    let id;
     $: id = $page.params.id;
 
     onMount(async () => {
@@ -34,7 +33,7 @@
         </div>
     </div>
 {:else}
-    <p>Ładowanie książki...</p>
+    <p class="loading-text">Ładowanie książki...</p>
 {/if}
 
 <style>
@@ -42,7 +41,7 @@
         max-width: 900px;
         margin: 40px auto;
         background: #fff;
-        padding: 20px;
+        padding: 24px;
         border-radius: 12px;
         box-shadow: 0 6px 16px rgba(0,0,0,0.08);
         display: flex;
@@ -60,7 +59,7 @@
     .book-image-wrapper img {
         width: 300px;
         height: 500px;
-        object-fit: cover; 
+        object-fit: cover;
         border-radius: 8px;
     }
 
@@ -92,6 +91,13 @@
         line-height: 1.5;
     }
 
+    .loading-text {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 1.2rem;
+        color: #777;
+    }
+
     @media (max-width: 768px) {
         .book-detail-container {
             flex-direction: column;
@@ -103,8 +109,8 @@
         }
 
         .book-image-wrapper img {
-            width: 250px; 
-            height: 500px;
+            width: 250px;
+            height: 450px;
         }
     }
 </style>
